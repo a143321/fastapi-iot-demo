@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home AI Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --danger: #f43f5e;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s ease;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .alert-item {
+            background: rgba(244, 63, 94, 0.1);
+            border-left: 4px solid var(--danger);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .alert-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        /* Loading animation */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .api-link {
+            text-align: center;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        .api-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .api-link a:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Smart Home Edge Intelligence</h1>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">FastAPI IoT & AI Demo Application</p>
+    </header>
+
+    <div class="container">
+        <!-- Sensor Data Panel -->
+        <div class="glass-panel">
+            <h2>
+                Live Sensor Data 
+                <button class="btn" onclick="simulateData()">Simulate Data</button>
+            </h2>
+            <div id="sensor-data-container">
+                <p style="color: var(--text-muted); text-align: center;">Waiting for data...</p>
+            </div>
+        </div>
+
+        <!-- AI Prediction Panel -->
+        <div class="glass-panel">
+            <h2>
+                AI Inference Logs
+                <div class="spinner" id="ai-spinner"></div>
+            </h2>
+            <div id="alerts-container">
+                <p style="color: var(--text-muted); text-align: center;">No anomalies detected recently.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-link">
+        <a href="/docs" target="_blank" title="Swagger UI">View API Documentation (Swagger) &rarr;</a>
+    </div>
+
+    <script>
+        const DEVICE_ID = "LR-Zone-01";
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/sensors/status');
+                const data = await res.json();
+                
+                if(data.length > 0) {
+                    const sensor = data.find(d => d.device_id === DEVICE_ID) || data[0];
+                    document.getElementById('sensor-data-container').innerHTML = `
+                        <div class="metric">
+                            <span>Device ID</span>
+                            <span class="metric-value" style="color: var(--text-main);">${sensor.device_id}</span>
+                        </div>
+                        <div class="metric">
+                            <span>Temperature</span>
+                            <span class="metric-value">${sensor.data.temperature.toFixed(1)} °C</span>
+                        </div>
+                        <div class="metric">
+                            <span>Humidity</span>
+                            <span class="metric-value">${sensor.data.humidity.toFixed(1)} %</span>
+                        </div>
+                        <div class="metric">
+                            <span>Occupancy</span>
+                            <span class="metric-value" style="color: ${sensor.data.occupancy ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${sensor.data.occupancy ? 'Detected' : 'Clear'}
+                            </span>
+                        </div>
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button class="btn" style="width: 100%;" onclick="runAIPrediction()">Run AI Analysis</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error("Error fetching status:", error);
+            }
+        }
+
+        async function fetchAlerts() {
+            try {
+                const res = await fetch('/api/alerts');
+                const data = await res.json();
+                
+                const container = document.getElementById('alerts-container');
+                if(data.length > 0) {
+                    container.innerHTML = data.map(alert => `
+                        <div class="alert-item">
+                            <div class="alert-time">${new Date(alert.time).toLocaleTimeString()} - ${alert.device_id}</div>
+                            <div><strong>AI Action:</strong> ${alert.action}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error("Error fetching alerts:", error);
+            }
+        }
+
+        async function simulateData() {
+            // Generate random sensor data that might trigger AI rules
+            const temp = 20 + (Math.random() * 15 - 5); // 15 to 35
+            const hum = 40 + (Math.random() * 40);      // 40 to 80
+            const occ = Math.random() > 0.3;            // 70% chance true
+
+            try {
+                await fetch(`/api/sensors/${DEVICE_ID}/data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        temperature: temp,
+                        humidity: hum,
+                        occupancy: occ
+                    })
+                });
+                await fetchStatus();
+            } catch (error) {
+                console.error("Error simulating data:", error);
+            }
+        }
+
+        async function runAIPrediction() {
+            const spinner = document.getElementById('ai-spinner');
+            spinner.style.display = 'block';
+            
+            try {
+                // Mock network delay for effect
+                await new Promise(r => setTimeout(r, 600)); 
+                
+                await fetch(`/api/ai/predict/${DEVICE_ID}`, { method: 'POST' });
+                await fetchAlerts();
+            } catch (error) {
+                console.error("Error running AI:", error);
+                alert("Please simulate data first!");
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Initialize
+        fetchStatus();
+        fetchAlerts();
+        // Refresh every 5 seconds
+        setInterval(() => {
+            fetchStatus();
+            fetchAlerts();
+        }, 5000);
+    </script>
+</body>
+</html>
