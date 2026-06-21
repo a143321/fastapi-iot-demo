@@ -26,23 +26,27 @@
    - 単なるPoCにとどまらず、OIDC連携によるセキュリティ強化やDynamoDBによるデータ永続化など、実務を見据えた拡張を段階的に実施しています。
    - ※詳細は [今後のロードマップ](./docs/future_roadmap.md) を参照。
 
-## 📸 スクリーンショット
+## 📸 システム稼働エビデンス（本番環境）
 
-### 1. IoTダッシュボード UI
-フロントエンドとの結合を想定したデモ用のダークモードUIです。
-![IoT Dashboard](./assets/dashboard.png)
+### 1. CI/CD パイプライン（GitHub Actions）
+Pushをトリガーに自動テストとコンテナビルドが行われ、ECRへデプロイされる全自動パイプラインです。
+![CI/CD Pipeline](./assets/prd_01_cicd_github_actions.png)
 
-### 2. API仕様（Swagger UI）
+### 2. IoTダッシュボード稼働画面（フロントエンド）
+AWS ALB経由で配信されているダークモードのデモ用UIです。
+![IoT Dashboard](./assets/prd_02_frontend_alb_dashboard.png)
+
+### 3. API仕様とルーティング（Swagger UI）
 FastAPIによって自動生成される、OpenAPI準拠のインタラクティブなAPIドキュメントです。
-![Swagger UI](./assets/swagger.png)
+![Swagger UI](./assets/prd_03_backend_swagger_api.png)
 
-### 3. CI/CD パイプライン（GitHub Actions）
-Pushをトリガーにテスト・ビルド・AWS ECRへのプッシュが全自動で実行されます。
-![GitHub Actions](./assets/github_actions.png)
+### 4. データベースのデータ永続化（DynamoDB）
+IoTデバイスから送信されたデータが、権限設定に基づきセキュアにDynamoDBへ書き込まれています。
+![DynamoDB](./assets/prd_04_database_dynamodb_items.png)
 
-### 4. AWS クラウドインフラ（Amazon ECS）
-コンテナはAWS上で稼働し、パブリックエンドポイントを介して世界中に公開されています。
-![AWS ECS](./assets/aws_ecs.png)
+### 5. コンテナインフラ稼働状況（Amazon ECS Fargate）
+サーバーレスコンテナ基盤（Fargate）上で、アプリケーションが正常にアクティブ状態で稼働しています。
+![AWS ECS](./assets/prd_05_infra_ecs_fargate.png)
 
 ---
 
@@ -84,20 +88,28 @@ graph LR
   - Terraform (Infrastructure as Code)
 - **Frontend (Demo)**: HTML5, Vanilla CSS, JavaScript
 
-## 💻 ローカル環境での動かし方
+## 📚 ドキュメントと使い方
 
-Dockerを使用して、ローカル環境で簡単にAPIを起動できます。
+プロジェクトの詳細なセットアップ方法や運用ルールについては、以下の専用ドキュメントをご用意しています。用途に合わせてご参照ください。
+
+### 💻 ローカルでの開発・テスト
+データベース（DynamoDB）を含めた環境を手元で簡単に立ち上げる手順です。
+👉 **[ローカル開発・テスト環境ガイド](./docs/local_development_guide.md)** 
 
 ```bash
-# リポジトリのクローン
-git clone https://github.com/yourusername/fastapi-iot-demo.git
-cd fastapi-iot-demo
+# Docker Composeで一括起動
+docker compose up -d
 
-# Dockerコンテナのビルドと起動
-docker build -t fastapi-iot-demo .
-docker run -d -p 8000:8000 fastapi-iot-demo
-
-# ブラウザでアクセス
+# ブラウザで以下のURLにアクセス
 # デモUI: http://localhost:8000/
-# APIドキュメント: http://localhost:8000/docs
+# DB確認: http://localhost:8002/
 ```
+
+### ☁️ AWS本番環境へのデプロイ
+Terraformを用いたインフラの自動構築から、GitHub ActionsによるCI/CDデプロイまでの完全な手順です。
+👉 **[本番環境デプロイメントガイド](./docs/production_setup_guide.md)** 
+
+### 🔧 その他技術資料
+* **[Terraform / IaC アーキテクチャ解説](./docs/iac_terraform_guide.md)**
+* **[OIDC (OpenID Connect) 連携ガイド](./docs/oidc_migration_guide.md)**
+* **[トラブルシューティング集](./docs/troubleshooting.md)**

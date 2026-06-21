@@ -14,12 +14,12 @@
 - [x] AWSコンソール上で手動構築したインフラのTerraformコード化（`terraform/` ディレクトリ）
 - [x] ECR, ECS Cluster, IAM RoleのIaC化とドキュメント整備
 
-## 🚀 Phase 3: Security & Persistence (Current / In Progress)
-- [ ] **GitHub Actions x AWS OIDC連携**
+## 📍 Phase 3: Security & Persistence (Completed)
+- [x] **GitHub Actions x AWS OIDC連携**
   - セキュリティのベストプラクティスに基づき、永続的なAWSアクセスキーを廃止。
-  - GitHub ActionsからAWSへのデプロイをOpenID Connect (OIDC) による一時クレデンシャルへ移行。
-- [ ] **Amazon DynamoDBによるデータ永続化**
-  - 現在オンメモリで処理しているIoTセンサーデータを、NoSQLデータベース（DynamoDB）に保存・読み出しするステートフルなアーキテクチャへの移行。
+  - GitHub ActionsからAWSへのデプロイをOpenID Connect (OIDC) による一時クレデンシャルへ移行済み。
+- [x] **Amazon DynamoDBによるデータ永続化**
+  - オンメモリで処理していたIoTセンサーデータを、NoSQLデータベース（DynamoDB）に保存・読み出しするステートフルなアーキテクチャへの移行完了。
 
 ## 🔮 Phase 4: Authentication & Authorization (Future)
 - [ ] **APIキー または JWTベースの認証導入**
