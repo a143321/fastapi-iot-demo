@@ -11,8 +11,32 @@ from botocore.exceptions import ClientError
 
 # DynamoDBの初期化
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
-dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+DYNAMODB_ENDPOINT_URL = os.getenv("DYNAMODB_ENDPOINT_URL")
 DYNAMODB_TABLE_NAME = "IoTData"
+
+if DYNAMODB_ENDPOINT_URL:
+    # ローカル開発環境（DynamoDB Local）用
+    dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION, endpoint_url=DYNAMODB_ENDPOINT_URL)
+    # ローカル環境の場合、テーブルが存在しなければ自動作成する
+    try:
+        dynamodb.meta.client.describe_table(TableName=DYNAMODB_TABLE_NAME)
+    except dynamodb.meta.client.exceptions.ResourceNotFoundException:
+        print(f"Creating local DynamoDB table: {DYNAMODB_TABLE_NAME}")
+        dynamodb.create_table(
+            TableName=DYNAMODB_TABLE_NAME,
+            KeySchema=[
+                {'AttributeName': 'device_id', 'KeyType': 'HASH'},
+                {'AttributeName': 'timestamp', 'KeyType': 'RANGE'}
+            ],
+            AttributeDefinitions=[
+                {'AttributeName': 'device_id', 'AttributeType': 'S'},
+                {'AttributeName': 'timestamp', 'AttributeType': 'S'}
+            ],
+            BillingMode='PAY_PER_REQUEST'
+        )
+else:
+    # 本番環境（AWS）用
+    dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 
 app = FastAPI(
     title="Smart Home IoT & AI Dashboard",

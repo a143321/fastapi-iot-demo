@@ -8,3 +8,11 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
