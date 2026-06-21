@@ -48,3 +48,31 @@ sequenceDiagram
 ## 💡 導入によるビジネスバリュー
 
 本プロジェクトにおいてOIDCを採用することは、単なる技術的なアップデートにとどまらず、エンタープライズ環境で求められる **「ゼロトラストセキュリティ」** および **「クレデンシャル漏洩リスクの根本的排除」** を実現するものです。これにより、安全かつ運用コストの低い継続的デリバリー（CD）環境が構築されています。
+
+## 🚨 トラブルシューティング（実務での知見）
+
+### `ecs:UpdateService` の AccessDeniedException エラー
+GitHub Actionsからデプロイを実行した際、以下のようなエラーが発生してジョブが失敗するケースがあります。
+```text
+User: arn:aws:sts::...:assumed-role/github-actions-oidc-role/GitHubActions is not authorized to perform: ecs:UpdateService
+```
+
+**【原因】**
+AWS側で作成した `github-actions-oidc-role`（OIDCロール）に、Amazon ECRへのPush権限（`AmazonEC2ContainerRegistryPowerUser` など）は付与されているものの、ECSのサービスを更新（再起動によるデプロイ）するための権限が不足しているためです。
+
+**【解決策】**
+OIDCロールに対して、以下のインラインポリシーを追加し、対象のECSサービスに対する `ecs:UpdateService` アクションを許可します。
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "ecs:UpdateService",
+            "Resource": "arn:aws:ecs:ap-northeast-1:123456789012:service/your-cluster-name/your-service-name"
+        }
+    ]
+}
+```
+この権限を追加することで、ECRへのイメージPushからECSの再起動（ローリングアップデート）までを完全に自動化するCI/CDパイプラインが正常に動作するようになります。
