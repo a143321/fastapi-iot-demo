@@ -14,9 +14,3 @@ variable "app_name" {
   description = "Name of the application"
   default     = "prd-fastapi-iot-demo"
 }
-
-variable "container_port" {
-  description = "Port the container is listening on"
-  type        = number
-  default     = 8000
-}

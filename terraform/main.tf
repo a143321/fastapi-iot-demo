@@ -1,13 +1,8 @@
 # ==========================================
-# Amazon ECR (Elastic Container Registry)
+# Fetch existing ECR repository (Managed in terraform/ecr/)
 # ==========================================
-resource "aws_ecr_repository" "app_repo" {
-  name                 = var.app_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+data "aws_ecr_repository" "app_repo" {
+  name = var.app_name
 }
 
 # ==========================================
@@ -58,11 +53,6 @@ resource "aws_cloudwatch_log_group" "app_log_group" {
 # ==========================================
 # Output
 # ==========================================
-output "ecr_repository_url" {
-  value       = aws_ecr_repository.app_repo.repository_url
-  description = "The URL of the ECR repository"
-}
-
 output "ecs_cluster_name" {
   value       = aws_ecs_cluster.main.name
   description = "The name of the ECS cluster"
