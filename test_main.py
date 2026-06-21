@@ -1,8 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 from main import app
 
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def mock_dynamodb():
+    """CI/CD環境でAWS認証エラーが出ないようにDynamoDBをモック化"""
+    with patch("main.dynamodb.Table") as mock_table:
+        yield mock_table
 
 def test_read_root():
     """ルートURLのテスト: 正常にダッシュボードのHTMLが返ること"""
