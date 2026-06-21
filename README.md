@@ -14,9 +14,9 @@
 1. **GitHub Actionsによる完全自動CDパイプライン**
    - コードを `main` ブランチにPushするだけで、自動的に `pytest` による単体テストが実行されます。
    - テスト成功時のみDockerイメージがビルドされ、AWS ECRに自動プッシュされます。
-2. **AWS ECS (Fargate) によるコンテナ運用とIAM設計**
+2. **AWS ECS (Fargate) によるコンテナ運用とIAM設計 (OIDC連携)**
    - フルマネージドなコンテナ環境（ECS Express Mode）を採用し、スケーラビリティを確保。
-   - インフラデプロイ用ロールとCI/CD用IAMユーザーの権限を分離し、最小権限の原則（Least Privilege）に基づいたセキュアなIAM設計を行っています。
+   - CI/CDパイプラインにはセキュリティベストプラクティスである「OIDC (OpenID Connect)」を採用し、永続的なアクセスキーを廃止したセキュアな設計を行っています。詳細は [OIDCマイグレーションガイド](./docs/oidc_migration_guide.md) を参照。
 3. **Pydanticによる堅牢なデータバリデーション**
    - IoTデバイスから送信されるJSONデータ（温度、湿度、モーションセンサー等）の型チェックと制約を厳密に定義し、不正なデータの混入をAPIの入り口で防ぎます。
 4. **Terraformによるインフラのコード化 (IaC)**
