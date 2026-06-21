@@ -61,3 +61,7 @@ jobs:
           
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy new image to Amazon ECS
+        run: |
+          aws ecs update-service --cluster prd-fastapi-iot-demo-cluster --service prd-fastapi-iot-demo-service --force-new-deployment
