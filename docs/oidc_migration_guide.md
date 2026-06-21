@@ -18,6 +18,27 @@
 
 OIDCを利用した認証フローは以下の通りです。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant GitHub as GitHub Actions
+    participant Provider as GitHub OIDC Provider
+    participant AWS as AWS IAM (STS)
+    participant ECR as Amazon ECR
+
+    Note over AWS: 事前準備: IAMにIDプロバイダと<br>OIDCロールを登録
+    
+    GitHub->>Provider: JWTトークン(IDカード)の発行を要求
+    Provider-->>GitHub: JWTトークンを発行
+    GitHub->>AWS: 一時クレデンシャルを要求<br>(AssumeRoleWithWebIdentity) + JWT提示
+    
+    Note over AWS: JWTの署名検証、<br>リポジトリ/ブランチの一致確認
+    
+    AWS-->>GitHub: 一時クレデンシャルを発行<br>(数分間のみ有効なアクセスキー等)
+    GitHub->>ECR: DockerイメージをPush<br>(一時クレデンシャルを使用)
+    ECR-->>GitHub: Push完了
+```
+
 1. **信頼関係の構築**: あらかじめAWS側のIAMロール（`github-actions-oidc-role`）に、「対象のGitHubリポジトリ（`a143321/fastapi-iot-demo`）の `main` ブランチからのリクエストのみを信頼する」というポリシーを設定しておきます。
 2. **トークン要求**: GitHub Actionsがジョブを実行する際、GitHubのOIDCプロバイダに対して一時的なJWT（JSON Web Token）を要求します。
 3. **AWSへの提示**: 取得したJWTをAWS STS（Security Token Service）に提示し、一時的な認証情報（セッショントークン）を要求します。
