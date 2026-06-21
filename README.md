@@ -19,6 +19,9 @@
    - インフラデプロイ用ロールとCI/CD用IAMユーザーの権限を分離し、最小権限の原則（Least Privilege）に基づいたセキュアなIAM設計を行っています。
 3. **Pydanticによる堅牢なデータバリデーション**
    - IoTデバイスから送信されるJSONデータ（温度、湿度、モーションセンサー等）の型チェックと制約を厳密に定義し、不正なデータの混入をAPIの入り口で防ぎます。
+4. **Terraformによるインフラのコード化 (IaC)**
+   - 再現性の確保と属人化の排除のため、本番運用のインフラストラクチャをTerraformでコード化しています。
+   - ※詳細は [IaC / Terraform ガイド](./docs/iac_terraform_guide.md) および `terraform/` ディレクトリを参照。
 
 ## 📸 スクリーンショット
 
@@ -75,6 +78,7 @@ graph LR
   - Amazon ECR (Elastic Container Registry)
   - Amazon ECS (Elastic Container Service / Express Mode)
   - AWS IAM (Identity and Access Management)
+  - Terraform (Infrastructure as Code)
 - **Frontend (Demo)**: HTML5, Vanilla CSS, JavaScript
 
 ## 💻 ローカル環境での動かし方
