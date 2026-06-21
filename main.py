@@ -2,12 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 import datetime
 import random
 import os
 import boto3
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
 
 # DynamoDBの初期化
 AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
@@ -114,6 +115,84 @@ async def get_all_sensor_status():
     登録されているすべてのセンサーの最新状態を取得します。
     """
     return [DeviceStatus(**data) for data in sensor_db.values()]
+
+class HistoryResponse(BaseModel):
+    items: List[Dict[str, Any]]
+    total_count: int
+    next_key: Optional[str] = None
+
+@app.get("/api/sensors/{device_id}/history", response_model=HistoryResponse)
+async def get_sensor_history(device_id: str, limit: int = 10, next_key: Optional[str] = None):
+    """
+    DynamoDBから指定されたデバイスの履歴データを取得します。
+    ページネーション（limit, next_key）および全体件数に対応しています。
+    """
+    try:
+        table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        
+        # 1. 全体件数の取得
+        count_response = table.query(
+            KeyConditionExpression=Key('device_id').eq(device_id),
+            Select='COUNT'
+        )
+        total_count = count_response.get('Count', 0)
+        
+        # 2. データの取得（ページネーション）
+        query_kwargs = {
+            'KeyConditionExpression': Key('device_id').eq(device_id),
+            'ScanIndexForward': False,  # 降順（最新順）
+            'Limit': limit
+        }
+        
+        if next_key:
+            query_kwargs['ExclusiveStartKey'] = {
+                'device_id': device_id,
+                'timestamp': next_key
+            }
+            
+        response = table.query(**query_kwargs)
+        items = response.get('Items', [])
+        last_evaluated_key = response.get('LastEvaluatedKey')
+        
+        new_next_key = last_evaluated_key.get('timestamp') if last_evaluated_key else None
+        
+        return HistoryResponse(
+            items=items,
+            total_count=total_count,
+            next_key=new_next_key
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DynamoDBからの履歴取得に失敗しました: {str(e)}")
+
+@app.delete("/api/sensors/{device_id}/history")
+async def clear_sensor_history(device_id: str):
+    """
+    DynamoDBから指定されたデバイスの全履歴データを削除（クリア）します。
+    """
+    try:
+        table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        response = table.query(
+            KeyConditionExpression=Key('device_id').eq(device_id)
+        )
+        items = response.get('Items', [])
+        
+        # BatchWriteで一括削除
+        with table.batch_writer() as batch:
+            for item in items:
+                batch.delete_item(
+                    Key={
+                        'device_id': item['device_id'],
+                        'timestamp': item['timestamp']
+                    }
+                )
+        
+        # インメモリのキャッシュもクリア
+        if device_id in sensor_db:
+            del sensor_db[device_id]
+            
+        return {"message": f"{len(items)} items cleared successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DynamoDBのデータクリアに失敗しました: {str(e)}")
 
 @app.post("/api/ai/predict/{device_id}", response_model=AIPredictionResponse)
 async def predict_optimization(device_id: str):

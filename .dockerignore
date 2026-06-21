@@ -16,3 +16,6 @@ env/
 .pytest_cache/
 .github/
 test_main.py
+
+# Infrastructure
+terraform/

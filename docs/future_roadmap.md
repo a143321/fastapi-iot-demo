@@ -18,8 +18,9 @@
 - [x] **GitHub Actions x AWS OIDC連携**
   - セキュリティのベストプラクティスに基づき、永続的なAWSアクセスキーを廃止。
   - GitHub ActionsからAWSへのデプロイをOpenID Connect (OIDC) による一時クレデンシャルへ移行済み。
-- [x] **Amazon DynamoDBによるデータ永続化**
+- [x] **Amazon DynamoDBによるデータ永続化と可視化**
   - オンメモリで処理していたIoTセンサーデータを、NoSQLデータベース（DynamoDB）に保存・読み出しするステートフルなアーキテクチャへの移行完了。
+  - ダッシュボード上に、DynamoDBから取得した時系列データの履歴テーブル（直近10件）と履歴クリア機能を実装。
 
 ## 🔮 Phase 4: Authentication & Authorization (Future)
 - [ ] **APIキー または JWTベースの認証導入**
