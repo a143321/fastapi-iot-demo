@@ -1,65 +1,96 @@
-# FastAPI IoT & AI Demo
+# 🚀 Smart Home Edge Intelligence - FastAPI IoT & AI Demo
 
-IoTデバイス（スマートホーム等）から送信されるセンサーデータを収集し、簡単なモックAIによって異常検知・最適化予測を行うFastAPIデモアプリケーションです。
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115.4-009688.svg)
+![AWS ECS](https://img.shields.io/badge/AWS-ECS%20Fargate-FF9900.svg)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF.svg)
 
-## 特徴
-- **FastAPI**: 高速でモダンな非同期バックエンド
-- **Python 3.13 対応**: パフォーマンスが向上した最新のPython環境を想定
-- **Swagger UI 自動生成**: API仕様書とテストUIがWebブラウザで直感的に操作可能
-- **Glassmorphism UI**: 付属のフロントエンドでデータとAI推論の様子を視覚化
+架空の「スマートホーム向けエッジAIデバイス」を想定した、IoTセンサーデータの収集および異常検知（ダミー推論）を行うバックエンドAPIシステムです。
 
----
+単なるアプリケーションの開発にとどまらず、**「実務を想定したインフラ構築とCI/CDパイプラインの自動化」** に重点を置いて設計・実装しています。
 
-## 🚀 環境構築手順 (Environment Setup)
+## 🌟 アピールポイント（実務想定の設計）
 
-### 1. リポジトリの配置
-本ディレクトリ (`fastapi-iot-demo`) に移動します。
-```bash
-cd ~/projects/fastapi-iot-demo
-```
+1. **GitHub Actionsによる完全自動CDパイプライン**
+   - コードを `main` ブランチにPushするだけで、自動的に `pytest` による単体テストが実行されます。
+   - テスト成功時のみDockerイメージがビルドされ、AWS ECRに自動プッシュされます。
+2. **AWS ECS (Fargate) によるコンテナ運用とIAM設計**
+   - フルマネージドなコンテナ環境（ECS Express Mode）を採用し、スケーラビリティを確保。
+   - インフラデプロイ用ロールとCI/CD用IAMユーザーの権限を分離し、最小権限の原則（Least Privilege）に基づいたセキュアなIAM設計を行っています。
+3. **Pydanticによる堅牢なデータバリデーション**
+   - IoTデバイスから送信されるJSONデータ（温度、湿度、モーションセンサー等）の型チェックと制約を厳密に定義し、不正なデータの混入をAPIの入り口で防ぎます。
 
-### 2. 仮想環境の作成 (Python 3.13)
-システム環境を汚さないために、Python 3.13を用いた仮想環境(`venv`)を作成します。
+## 📸 スクリーンショット
 
-```bash
-# 仮想環境を作成（pipなしで作成し、後から最新のpipを導入する安全な手順です）
-python3.13 -m venv venv --without-pip
+### 1. IoTダッシュボード UI
+フロントエンドとの結合を想定したデモ用のダークモードUIです。
+![IoT Dashboard](./assets/dashboard.png)
 
-# 仮想環境を有効化
-source venv/bin/activate
+### 2. API仕様（Swagger UI）
+FastAPIによって自動生成される、OpenAPI準拠のインタラクティブなAPIドキュメントです。
+![Swagger UI](./assets/swagger.png)
 
-# 仮想環境内にpipをインストール
-curl -sS https://bootstrap.pypa.io/get-pip.py | python
-```
+### 3. CI/CD パイプライン（GitHub Actions）
+Pushをトリガーにテスト・ビルド・AWS ECRへのプッシュが全自動で実行されます。
+![GitHub Actions](./assets/github_actions.png)
 
-### 3. パッケージのインストール
-`requirements.txt` を用いて、FastAPIとUvicorn等のパッケージをインストールします。
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🏃 実行方法 (How to Run)
-
-仮想環境に入った状態で、以下のコマンドを実行しサーバーを起動します。
-
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-起動後、以下のURLにアクセスして動作を確認してください。
-
-1. **ダッシュボード画面 (UI)**
-   👉 [http://localhost:8000/](http://localhost:8000/)
-2. **自動生成APIドキュメント (Swagger UI)**
-   👉 [http://localhost:8000/docs](http://localhost:8000/docs)
+### 4. AWS クラウドインフラ（Amazon ECS）
+コンテナはAWS上で稼働し、パブリックエンドポイントを介して世界中に公開されています。
+![AWS ECS](./assets/aws_ecs.png)
 
 ---
 
-## 📂 フォルダ構成
-- `main.py`: アプリケーション本体（APIエンドポイント、ビジネスロジック）
-- `requirements.txt`: 依存パッケージリスト
-- `static/`: 静的ファイル（HTML, CSS, JS）
-  - `index.html`: ダッシュボード画面
+## 🏗 システムアーキテクチャ
+
+以下の図は、本プロジェクトの継続的インテグレーション・デプロイ（CI/CD）およびクラウドインフラの全体像を示しています。
+
+```mermaid
+graph LR
+    subgraph Local [ローカル開発環境]
+        Dev[開発者] -->|1. git push| Git[GitHub Repository]
+    end
+
+    subgraph CI_CD [GitHub Actions]
+        Git -->|2. Trigger Workflow| Test[Pytest]
+        Test -->|3. Success| Build[Docker Build]
+        Build -->|4. Push Image| ECR_Auth[AWS IAM Auth]
+    end
+
+    subgraph AWS_Cloud [AWS Cloud]
+        ECR_Auth -->|5. Store Image| ECR[(Amazon ECR)]
+        ECR -.->|6. Pull Image| ECS[Amazon ECS<br>Express Mode]
+        ECS -->|7. Expose| ALB[Load Balancer]
+    end
+
+    User[Web/IoT Client] -->|8. HTTP Request| ALB
+```
+
+## 🛠 技術スタック
+
+- **Backend Framework**: Python, FastAPI, Pydantic
+- **Testing**: Pytest, httpx
+- **Containerization**: Docker
+- **CI/CD**: GitHub Actions
+- **Cloud Infrastructure**: Amazon Web Services (AWS)
+  - Amazon ECR (Elastic Container Registry)
+  - Amazon ECS (Elastic Container Service / Express Mode)
+  - AWS IAM (Identity and Access Management)
+- **Frontend (Demo)**: HTML5, Vanilla CSS, JavaScript
+
+## 💻 ローカル環境での動かし方
+
+Dockerを使用して、ローカル環境で簡単にAPIを起動できます。
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/yourusername/fastapi-iot-demo.git
+cd fastapi-iot-demo
+
+# Dockerコンテナのビルドと起動
+docker build -t fastapi-iot-demo .
+docker run -d -p 8000:8000 fastapi-iot-demo
+
+# ブラウザでアクセス
+# デモUI: http://localhost:8000/
+# APIドキュメント: http://localhost:8000/docs
+```
