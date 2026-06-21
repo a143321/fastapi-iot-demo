@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Any
 import datetime
 import random
 import os
+import traceback
 import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
@@ -87,7 +88,7 @@ async def receive_sensor_data(device_id: str, data: SensorData):
     status = DeviceStatus(device_id=device_id, last_update=current_time, data=data)
     
     # 1. ダッシュボードの高速表示用キャッシュ（インメモリ）
-    sensor_db[device_id] = status.dict()
+    sensor_db[device_id] = status.model_dump()
     
     # 2. DynamoDBへの永続化保存（データの蓄積）
     try:
@@ -102,7 +103,6 @@ async def receive_sensor_data(device_id: str, data: SensorData):
             }
         )
     except Exception as e:
-        import traceback
         error_details = f"DynamoDB Error: {str(e)}\n{traceback.format_exc()}"
         print(f"=== ERROR LOG ===\n{error_details}\n=================") # ECS（CloudWatch）の詳細ログ用
         raise HTTPException(status_code=500, detail=f"DynamoDBへの保存に失敗しました: {str(e)}") # Swagger UI用
@@ -121,60 +121,50 @@ class HistoryResponse(BaseModel):
     total_count: int
     next_key: Optional[str] = None
 
-@app.get("/api/sensors/{device_id}/history", response_model=HistoryResponse)
-async def get_sensor_history(device_id: str, limit: int = 10, next_key: Optional[str] = None):
+@app.get("/api/history", response_model=HistoryResponse)
+async def get_all_history(page: int = 1, limit: int = 100):
     """
-    DynamoDBから指定されたデバイスの履歴データを取得します。
-    ページネーション（limit, next_key）および全体件数に対応しています。
+    DynamoDBから全デバイスの履歴データを取得します（フルスキャン＆メモリ内ソート）。
     """
     try:
         table = dynamodb.Table(DYNAMODB_TABLE_NAME)
-        
-        # 1. 全体件数の取得
-        count_response = table.query(
-            KeyConditionExpression=Key('device_id').eq(device_id),
-            Select='COUNT'
-        )
-        total_count = count_response.get('Count', 0)
-        
-        # 2. データの取得（ページネーション）
-        query_kwargs = {
-            'KeyConditionExpression': Key('device_id').eq(device_id),
-            'ScanIndexForward': False,  # 降順（最新順）
-            'Limit': limit
-        }
-        
-        if next_key:
-            query_kwargs['ExclusiveStartKey'] = {
-                'device_id': device_id,
-                'timestamp': next_key
-            }
-            
-        response = table.query(**query_kwargs)
+        response = table.scan()
         items = response.get('Items', [])
-        last_evaluated_key = response.get('LastEvaluatedKey')
         
-        new_next_key = last_evaluated_key.get('timestamp') if last_evaluated_key else None
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            items.extend(response.get('Items', []))
+            
+        items.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        total_count = len(items)
+        
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated_items = items[start_idx:end_idx]
+        
+        next_key = str(page + 1) if end_idx < total_count else None
         
         return HistoryResponse(
-            items=items,
+            items=paginated_items,
             total_count=total_count,
-            next_key=new_next_key
+            next_key=next_key
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DynamoDBからの履歴取得に失敗しました: {str(e)}")
 
-@app.delete("/api/sensors/{device_id}/history")
-async def clear_sensor_history(device_id: str):
+@app.delete("/api/history")
+async def clear_all_history():
     """
-    DynamoDBから指定されたデバイスの全履歴データを削除（クリア）します。
+    DynamoDBから全デバイスの履歴データを削除（クリア）します。
     """
     try:
         table = dynamodb.Table(DYNAMODB_TABLE_NAME)
-        response = table.query(
-            KeyConditionExpression=Key('device_id').eq(device_id)
-        )
+        response = table.scan()
         items = response.get('Items', [])
+        
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            items.extend(response.get('Items', []))
         
         # BatchWriteで一括削除
         with table.batch_writer() as batch:
@@ -187,8 +177,8 @@ async def clear_sensor_history(device_id: str):
                 )
         
         # インメモリのキャッシュもクリア
-        if device_id in sensor_db:
-            del sensor_db[device_id]
+        sensor_db.clear()
+        alert_history.clear()
             
         return {"message": f"{len(items)} items cleared successfully"}
     except Exception as e:

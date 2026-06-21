@@ -212,22 +212,26 @@
         
         <!-- Data History Panel -->
         <div class="glass-panel" style="grid-column: 1 / -1;">
-            <h2>
+            <h2 style="font-size: 1.2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
                 <span>Raw Data History (DynamoDB) <small id="total-count-badge" style="font-size: 0.8rem; background: var(--accent); padding: 0.2rem 0.5rem; border-radius: 12px; margin-left: 0.5rem; display: none;">Total: 0</small></span>
-                <button class="btn" style="background: var(--danger);" onclick="clearHistory()">Clear Data</button>
+                <div>
+                    <button class="btn" style="background: rgba(255,255,255,0.1); color: var(--text-main); margin-right: 0.5rem;" onclick="fetchHistory(0)">🔄 Refresh</button>
+                    <button class="btn" style="background: var(--danger);" onclick="clearHistory()">🗑 Clear</button>
+                </div>
             </h2>
             <div style="overflow-x: auto; max-height: 400px; overflow-y: auto; border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead>
                         <tr style="color: var(--text-muted);">
                             <th style="padding: 1rem; position: sticky; top: 0; background: #1e293b; z-index: 1;">Timestamp</th>
+                            <th style="padding: 1rem; position: sticky; top: 0; background: #1e293b; z-index: 1;">Device ID</th>
                             <th style="padding: 1rem; position: sticky; top: 0; background: #1e293b; z-index: 1;">Temp (°C)</th>
                             <th style="padding: 1rem; position: sticky; top: 0; background: #1e293b; z-index: 1;">Humidity (%)</th>
                             <th style="padding: 1rem; position: sticky; top: 0; background: #1e293b; z-index: 1;">Occupancy</th>
                         </tr>
                     </thead>
                     <tbody id="history-container">
-                        <tr><td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">No data available in DynamoDB</td></tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-muted);">No data available in DynamoDB</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -343,7 +347,6 @@
         }
 
         let currentPage = 1;
-        let pageKeys = [null]; // pageKeys[0] is for Page 1, pageKeys[1] is for Page 2
         const PAGE_SIZE = 100;
 
         async function fetchHistory(pageChange = 0) {
@@ -351,20 +354,12 @@
                 let newPage = currentPage + pageChange;
                 if (newPage < 1) newPage = 1;
                 
-                const currentStartKey = pageKeys[newPage - 1];
-                let url = `/api/sensors/${DEVICE_ID}/history?limit=${PAGE_SIZE}`;
-                
-                if (currentStartKey) {
-                    url += `&next_key=${encodeURIComponent(currentStartKey)}`;
-                }
+                let url = `/api/history?limit=${PAGE_SIZE}&page=${newPage}`;
                 
                 const res = await fetch(url);
                 const data = await res.json();
                 
                 currentPage = newPage;
-                if (data.next_key) {
-                    pageKeys[currentPage] = data.next_key;
-                }
                 
                 // Update Badge and Indicator
                 const badge = document.getElementById('total-count-badge');
@@ -378,13 +373,14 @@
                     tbody.innerHTML = data.items.map(item => `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <td style="padding: 1rem;">${new Date(item.timestamp).toLocaleString()}</td>
+                            <td style="padding: 1rem; font-family: monospace; color: var(--text-main);">${item.device_id || DEVICE_ID}</td>
                             <td style="padding: 1rem; color: var(--accent); font-weight: 600;">${parseFloat(item.temperature).toFixed(1)}</td>
                             <td style="padding: 1rem;">${parseFloat(item.humidity).toFixed(1)}</td>
                             <td style="padding: 1rem; color: ${item.occupancy ? 'var(--success)' : 'var(--text-muted)'}">${item.occupancy ? 'Detected' : 'Clear'}</td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">No data available in DynamoDB</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-muted);">No data available in DynamoDB</td></tr>';
                 }
                 
                 // Update Buttons
@@ -408,7 +404,7 @@
             if (!confirm("Are you sure you want to delete all historical data from DynamoDB?")) return;
             
             try {
-                await fetch(`/api/sensors/${DEVICE_ID}/history`, { method: 'DELETE' });
+                await fetch(`/api/history`, { method: 'DELETE' });
                 document.getElementById('sensor-data-container').innerHTML = '<p style="color: var(--text-muted); text-align: center;">Waiting for data...</p>';
                 await fetchHistory();
                 await fetchAlerts();

@@ -22,7 +22,9 @@
 4. **Terraformによるインフラのコード化 (IaC)**
    - 再現性の確保と属人化の排除のため、本番運用のインフラストラクチャをTerraformでコード化しています。
    - ※詳細は [IaC / Terraform ガイド](./docs/iac_terraform_guide.md) および `terraform/` ディレクトリを参照。
-5. **継続的な拡張を前提としたロードマップ**
+5. **本格的なデータ管理 UI**
+   - DynamoDBの `LastEvaluatedKey` を用いた100件単位のページネーション機能や総件数カウントを実装し、実運用に耐えうるダッシュボードを構築しています。
+6. **継続的な拡張を前提としたロードマップ**
    - 単なるPoCにとどまらず、OIDC連携によるセキュリティ強化やDynamoDBによるデータ永続化など、実務を見据えた拡張を段階的に実施しています。
    - ※詳細は [今後のロードマップ](./docs/future_roadmap.md) を参照。
 
@@ -70,6 +72,7 @@ graph LR
         ECR_Auth -->|5. Store Image| ECR[(Amazon ECR)]
         ECR -.->|6. Pull Image| ECS[Amazon ECS<br>Express Mode]
         ECS -->|7. Expose| ALB[Load Balancer]
+        ECS -->|9. Read/Write| DynamoDB[(Amazon DynamoDB)]
     end
 
     User[Web/IoT Client] -->|8. HTTP Request| ALB
