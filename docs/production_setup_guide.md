@@ -20,12 +20,7 @@ terraform apply
 ```
 途中で `Enter a value:` と聞かれたら `yes` と入力します。これでDockerイメージの保管庫が完成します。
 
-💡 **TIPS: コマンドライン（AWS CLI）で直接作成する場合**
-Terraformを使わずにAWS CLIで直接作成したい場合は、以下のコマンドを実行します。
-```bash
-aws ecr create-repository --repository-name prd-fastapi-iot-demo
-```
-（※CLIや画面から手動作成したリポジトリをTerraformの管理下（IaC）に取り込みたい場合は、`terraform/ecr` フォルダ内で `terraform import aws_ecr_repository.app_repo prd-fastapi-iot-demo` を実行します）
+
 
 **② アプリ基盤の構築（何度でも破棄可能な層）**
 ```bash
