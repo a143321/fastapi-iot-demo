@@ -5,6 +5,14 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict
 import datetime
 import random
+import os
+import boto3
+from botocore.exceptions import ClientError
+
+# DynamoDBの初期化
+AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
+dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+DYNAMODB_TABLE_NAME = "IoTData"
 
 app = FastAPI(
     title="Smart Home IoT & AI Dashboard",
@@ -48,11 +56,31 @@ async def serve_dashboard():
 @app.post("/api/sensors/{device_id}/data", response_model=DeviceStatus)
 async def receive_sensor_data(device_id: str, data: SensorData):
     """
-    IoTデバイスからのセンサーデータを受信し、保存します。
+    IoTデバイスからのセンサーデータを受信し、DynamoDBに永続化しつつインメモリにキャッシュします。
     """
     current_time = datetime.datetime.now().isoformat()
     status = DeviceStatus(device_id=device_id, last_update=current_time, data=data)
+    
+    # 1. ダッシュボードの高速表示用キャッシュ（インメモリ）
     sensor_db[device_id] = status.dict()
+    
+    # 2. DynamoDBへの永続化保存（データの蓄積）
+    try:
+        table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        table.put_item(
+            Item={
+                'device_id': device_id,
+                'timestamp': current_time,
+                'temperature': str(data.temperature), # Decimal等への変換を避けるため文字列化
+                'humidity': str(data.humidity),
+                'occupancy': data.occupancy
+            }
+        )
+    except ClientError as e:
+        print(f"DynamoDB ClientError: {e}")
+    except Exception as e:
+        print(f"DynamoDB is not fully configured (local environment or missing permissions): {e}")
+
     return status
 
 @app.get("/api/sensors/status", response_model=List[DeviceStatus])
