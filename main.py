@@ -76,10 +76,11 @@ async def receive_sensor_data(device_id: str, data: SensorData):
                 'occupancy': data.occupancy
             }
         )
-    except ClientError as e:
-        print(f"DynamoDB ClientError: {e}")
     except Exception as e:
-        print(f"DynamoDB is not fully configured (local environment or missing permissions): {e}")
+        import traceback
+        error_details = f"DynamoDB Error: {str(e)}\n{traceback.format_exc()}"
+        print(f"=== ERROR LOG ===\n{error_details}\n=================") # ECS（CloudWatch）の詳細ログ用
+        raise HTTPException(status_code=500, detail=f"DynamoDBへの保存に失敗しました: {str(e)}") # Swagger UI用
 
     return status
 
