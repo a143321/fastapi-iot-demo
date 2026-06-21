@@ -48,7 +48,13 @@ git push origin main
 
 ### 4. 動作確認
 GitHub Actionsの処理がすべて「Success」になったら、手順1で出力されたロードバランサーのURLにブラウザでアクセスします。
-（例: `http://fastapi-iot-demo-alb-xxxx.ap-northeast-1.elb.amazonaws.com`）
+（例: `http://prd-fastapi-iot-demo-alb-xxxx.ap-northeast-1.elb.amazonaws.com`）
+
+※もしURLを忘れてしまった場合は、ターミナルで `cd terraform` に移動して `terraform output alb_dns_name` を実行すればいつでも確認できます。
+
+💡 **HTTPアクセスの採用理由と今後の展望**
+本プロジェクトはPoC（概念実証）用のデモ環境であるため、AWS ALBが発行するデフォルトのDNS名（`*.elb.amazonaws.com`）をそのまま使用しており、通信プロトコルは `HTTP` となっています。
+実運用（本番環境）で `HTTPS` 化を行う場合は、独自ドメイン（Route 53）を取得し、AWS Certificate Manager (ACM) でSSL/TLS証明書を発行してALBにアタッチする設計となります。本デモ環境では検証の手軽さを優先し、HTTPにて稼働させています。
 
 ダークモードのダッシュボード画面が表示されれば、本番環境へのデプロイは100%成功です！
 

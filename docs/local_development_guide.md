@@ -37,7 +37,7 @@ FastAPIが自動生成するAPIドキュメント（Swagger UI）を使って、
 
 下部の「Server response」エリアに `200` のステータスコードと結果のJSONが表示されれば、APIのロジックは正常に動作しています。
 
-![Swagger UIでのテスト実行例](../assets/swagger_test.png)
+![Swagger UIでのテスト実行例](../assets/prd_03_backend_swagger_api.png)
 
 ### 2. 保存されたデータの目視確認（DynamoDB Admin）
 
